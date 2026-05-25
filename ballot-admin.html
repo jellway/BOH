@@ -107,7 +107,7 @@
   <div class="sidebar">
     <div class="sidebar-logo">
       <h1><i class="ti ti-ticket" style="font-size:16px;vertical-align:-2px;margin-right:5px;"></i>Ballot</h1>
-      <p>Admin</p>
+      <p>Admin · v2026-05-25 03:52</p>
     </div>
     <div class="nav-section-label">Manage</div>
     <button class="nav-item active" onclick="showView('events')"><i class="ti ti-calendar-event"></i> Events</button>
@@ -454,7 +454,7 @@ async function createBallotEvent() {
   if (!name||!date||!close||!capacity) { showToast('Fill in required fields.'); return; }
   setLoading('btn-create-event', true);
   try {
-    await api({ action:'createBallotEvent', name, venue:document.getElementById('ne-venue').value.trim(),
+    await api({ action:'createEvent', name, venue:document.getElementById('ne-venue').value.trim(),
       date, close, capacity, groupmax:parseInt(document.getElementById('ne-groupmax').value)||2,
       desc:document.getElementById('ne-desc').value.trim(), status:'open' });
     closeModal('new-event');

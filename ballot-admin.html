@@ -290,7 +290,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('new-event')">Cancel</button>
-      <button class="btn btn-primary" id="btn-create-event" onclick="createEvent()"><i class="ti ti-check"></i> Create event</button>
+      <button class="btn btn-primary" id="btn-create-event" onclick="createBallotEvent()"><i class="ti ti-check"></i> Create event</button>
     </div>
   </div>
 </div>
@@ -446,7 +446,7 @@ function renderEventsTable() {
   }).join('');
 }
 
-async function createEvent() {
+async function createBallotEvent() {
   const name     = document.getElementById('ne-name').value.trim();
   const date     = document.getElementById('ne-date').value;
   const close    = document.getElementById('ne-close').value;
@@ -454,7 +454,7 @@ async function createEvent() {
   if (!name||!date||!close||!capacity) { showToast('Fill in required fields.'); return; }
   setLoading('btn-create-event', true);
   try {
-    await api({ action:'createEvent', name, venue:document.getElementById('ne-venue').value.trim(),
+    await api({ action:'createBallotEvent', name, venue:document.getElementById('ne-venue').value.trim(),
       date, close, capacity, groupmax:parseInt(document.getElementById('ne-groupmax').value)||2,
       desc:document.getElementById('ne-desc').value.trim(), status:'open' });
     closeModal('new-event');

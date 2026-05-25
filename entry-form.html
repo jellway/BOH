@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Entry Form</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue:#378ADD; --blue-dark:#185FA5; --blue-bg:#E6F1FB;
+    --green-bg:#EAF3DE; --green-text:#3B6D11;
+    --red-bg:#FCEBEB; --red-text:#A32D2D;
+    --amber-bg:#FAEEDA; --amber-text:#854F0B;
+    --text-primary:#1a1a18; --text-secondary:#6b6a65; --text-tertiary:#9e9d98;
+    --border-mid:rgba(0,0,0,0.18); --border-light:rgba(0,0,0,0.1);
+    --bg:#f5f4f0; --card:#ffffff;
+    --radius:10px;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text-primary); min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:2rem 1rem 4rem; }
+  .card { background:var(--card); border:0.5px solid var(--border-light); border-radius:var(--radius); width:100%; max-width:520px; box-shadow:0 4px 24px rgba(0,0,0,0.07); overflow:hidden; }
+  .header { padding:2rem 1.75rem 1.5rem; border-bottom:0.5px solid var(--border-light); text-align:center; }
+  .header h1 { font-size:20px; font-weight:600; margin-bottom:6px; }
+  .header .meta { font-size:13px; color:var(--text-secondary); line-height:1.6; }
+  .header .meta strong { color:var(--text-primary); }
+  .badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:500; margin-top:10px; }
+  .badge-open { background:var(--green-bg); color:var(--green-text); }
+  .badge-closed { background:var(--amber-bg); color:var(--amber-text); }
+  .body { padding:1.75rem; }
+  .form-row { margin-bottom:1.1rem; }
+  .form-row label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; letter-spacing:0.02em; }
+  .form-row input, .form-row select, .form-row textarea {
+    width:100%; padding:9px 12px; font-size:14px; font-family:inherit;
+    border:0.5px solid var(--border-mid); border-radius:8px;
+    background:#fff; color:var(--text-primary); outline:none;
+    transition:border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    border-color:var(--blue); box-shadow:0 0 0 3px rgba(55,138,221,0.12);
+  }
+  .form-row textarea { resize:vertical; min-height:90px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .required { color:var(--blue); margin-left:2px; }
+  .btn-submit {
+    width:100%; padding:12px; font-size:15px; font-family:inherit; font-weight:500;
+    background:var(--blue); color:#fff; border:none; border-radius:8px;
+    cursor:pointer; transition:background 0.15s, transform 0.1s;
+    margin-top:0.5rem;
+  }
+  .btn-submit:hover { background:var(--blue-dark); }
+  .btn-submit:active { transform:scale(0.99); }
+  .btn-submit:disabled { opacity:0.6; cursor:not-allowed; }
+  .footnote { font-size:12px; color:var(--text-tertiary); text-align:center; margin-top:1rem; line-height:1.5; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:-3px; margin-right:6px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .alert { padding:1rem 1.25rem; border-radius:8px; font-size:14px; margin-bottom:1.25rem; line-height:1.5; }
+  .alert-error { background:var(--red-bg); color:var(--red-text); border:0.5px solid rgba(163,45,45,0.25); }
+  .alert-success { background:var(--green-bg); color:var(--green-text); border:0.5px solid rgba(59,109,17,0.25); text-align:center; padding:2rem; }
+  .alert-success h2 { font-size:18px; margin-bottom:8px; }
+  .alert-info { background:var(--blue-bg); color:var(--blue-dark); border:0.5px solid rgba(24,95,165,0.2); }
+
+  .loading-wrap { display:flex; align-items:center; justify-content:center; padding:3rem; gap:10px; color:var(--text-secondary); font-size:14px; }
+  .spinner-dark { border-color:rgba(0,0,0,0.15); border-top-color:var(--text-secondary); }
+
+  @media (max-width: 480px) {
+    body { padding:0; }
+    .card { border-radius:0; min-height:100vh; box-shadow:none; }
+    .form-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div id="app"><div class="loading-wrap"><span class="spinner spinner-dark"></span> Loading event…</div></div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Paste your Apps Script URL here (same one as in the admin app)
+const SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+// ─────────────────────────────────────────────────────────────────────────────
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = String(iso).split('-');
+  return d+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+' '+y;
+}
+
+async function api(params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${SCRIPT_URL}?${qs}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Error');
+  return json.data;
+}
+
+async function apiPost(params) {
+  const res = await fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify(params) });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Error');
+  return json.data;
+}
+
+function getEventIdFromUrl() {
+  const p = new URLSearchParams(window.location.search);
+  return p.get('event');
+}
+
+async function init() {
+  const app = document.getElementById('app');
+
+  if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+    app.innerHTML = `<div style="padding:2rem;"><div class="alert alert-error"><strong>Not configured.</strong> Open entry-form.html in a text editor and paste your Apps Script URL into the SCRIPT_URL variable at the top of the script.</div></div>`;
+    return;
+  }
+
+  const eventId = getEventIdFromUrl();
+
+  try {
+    const events = await api({ action:'getEvents' });
+
+    if (!eventId) {
+      // show event picker if no ?event= param
+      if (!events.length) {
+        app.innerHTML = `<div style="padding:2rem;"><div class="alert alert-info">No events are currently open for entry.</div></div>`;
+        return;
+      }
+      const openEvents = events.filter(e=>e.status==='open'&&!e.drawDone);
+      if (!openEvents.length) {
+        app.innerHTML = buildHeader({name:'Ballot', desc:'', date:'', venue:'', capacity:0, close:''}, 'closed')
+          + `<div style="padding:1.75rem;"><div class="alert alert-info">There are no events currently open for entry.</div></div>`;
+        return;
+      }
+      if (openEvents.length === 1) {
+        renderForm(openEvents[0]);
+      } else {
+        renderPicker(openEvents);
+      }
+      return;
+    }
+
+    const ev = events.find(e=>String(e.id)===String(eventId));
+    if (!ev) { app.innerHTML=`<div style="padding:2rem;"><div class="alert alert-error">Event not found.</div></div>`; return; }
+    renderForm(ev);
+
+  } catch(e) {
+    app.innerHTML = `<div style="padding:2rem;"><div class="alert alert-error">Could not load event: ${e.message}</div></div>`;
+  }
+}
+
+function buildHeader(ev, statusOverride) {
+  const closed = statusOverride==='closed' || ev.status!=='open' || ev.drawDone;
+  const badge = closed
+    ? '<span class="badge badge-closed">Entries closed</span>'
+    : `<span class="badge badge-open">Open · closes ${fmtDate(ev.close)}</span>`;
+  return `<div class="header">
+    <h1>${ev.name}</h1>
+    <div class="meta">
+      ${ev.date?`<strong>${fmtDate(ev.date)}</strong>`:''}
+      ${ev.venue?` · ${ev.venue}`:''}
+      ${ev.capacity?`<br>${ev.capacity} places available via ballot`:''}
+      ${ev.desc?`<br><span style="margin-top:6px;display:inline-block;">${ev.desc}</span>`:''}
+    </div>
+    ${badge}
+  </div>`;
+}
+
+function renderPicker(events) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header"><h1>Select an event</h1></div>
+    <div class="body">
+      ${events.map(ev=>`
+        <div style="border:0.5px solid var(--border-mid);border-radius:8px;padding:1rem;margin-bottom:10px;cursor:pointer;transition:background 0.1s;"
+          onclick="window.location.search='?event=${ev.id}'" onmouseover="this.style.background='#f5f4f0'" onmouseout="this.style.background=''">
+          <div style="font-weight:600;margin-bottom:2px;">${ev.name}</div>
+          <div style="font-size:13px;color:var(--text-secondary);">${fmtDate(ev.date)}${ev.venue?' · '+ev.venue:''} · ${ev.capacity} places</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderForm(ev) {
+  const app = document.getElementById('app');
+  const closed = ev.status!=='open' || ev.drawDone;
+  app.innerHTML = buildHeader(ev);
+
+  if (closed) {
+    app.innerHTML += `<div class="body"><div class="alert alert-info">Entries for this event are now closed. The ballot draw will take place shortly.</div></div>`;
+    return;
+  }
+
+  const maxGroup = ev.groupmax || 2;
+  const groupOpts = Array.from({length:maxGroup},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+
+  app.innerHTML += `
+    <div class="body" id="form-body">
+      <div id="form-error"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>First name<span class="required">*</span></label><input id="f-first" autocomplete="given-name" placeholder="Jane"></div>
+        <div class="form-row"><label>Last name<span class="required">*</span></label><input id="f-last" autocomplete="family-name" placeholder="Smith"></div>
+      </div>
+      <div class="form-row"><label>Email address<span class="required">*</span></label><input id="f-email" type="email" autocomplete="email" placeholder="jane@example.com"></div>
+      <div class="form-row"><label>Phone <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label><input id="f-phone" type="tel" autocomplete="tel" placeholder="+61 4xx xxx xxx"></div>
+      <div class="form-row"><label>Organisation <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label><input id="f-org" autocomplete="organization" placeholder="Smith Architecture"></div>
+      ${maxGroup>1?`<div class="form-row"><label>Number of places requested</label><select id="f-group">${groupOpts}</select></div>`:'<input type="hidden" id="f-group" value="1">'}
+      <div class="form-row"><label>Notes <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label><textarea id="f-notes" placeholder="Anything you'd like us to know…"></textarea></div>
+      <button class="btn-submit" id="btn-submit" onclick="submitEntry(${ev.id})">Submit entry</button>
+      <p class="footnote">Your details will only be used for ballot administration. Results will be notified after the ballot closes.</p>
+    </div>`;
+}
+
+async function submitEntry(eventId) {
+  const first = document.getElementById('f-first').value.trim();
+  const last  = document.getElementById('f-last').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const errEl = document.getElementById('form-error');
+  errEl.innerHTML = '';
+
+  if (!first||!last||!email) {
+    errEl.innerHTML = '<div class="alert alert-error">Please fill in all required fields.</div>';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.innerHTML = '<div class="alert alert-error">Please enter a valid email address.</div>';
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Submitting…';
+
+  try {
+    await apiPost({
+      action: 'createEntry', eventId,
+      first, last, email,
+      phone:  document.getElementById('f-phone')?.value.trim() || '',
+      org:    document.getElementById('f-org')?.value.trim() || '',
+      places: parseInt(document.getElementById('f-group')?.value) || 1,
+    });
+
+    document.getElementById('app').innerHTML = `
+      ${document.querySelector('.header')?.outerHTML||''}
+      <div class="body">
+        <div class="alert alert-success">
+          <h2>✓ Entry received</h2>
+          <p>Thanks ${first}, you're in the ballot.</p>
+          <p style="margin-top:8px;font-size:13px;color:var(--green-text);">You'll be notified of the result after the ballot closes.</p>
+        </div>
+      </div>`;
+  } catch(e) {
+    errEl.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = 'Submit entry';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

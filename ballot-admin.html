@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ballot — Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary:#ffffff; --bg-secondary:#f5f4f0; --bg-tertiary:#eceae4;
+    --text-primary:#1a1a18; --text-secondary:#6b6a65; --text-tertiary:#9e9d98;
+    --border-light:rgba(0,0,0,0.1); --border-mid:rgba(0,0,0,0.18);
+    --blue:#378ADD; --blue-dark:#185FA5; --blue-bg:#E6F1FB; --blue-text:#185FA5;
+    --green-bg:#EAF3DE; --green-text:#3B6D11;
+    --amber-bg:#FAEEDA; --amber-text:#854F0B;
+    --red-bg:#FCEBEB; --red-text:#A32D2D;
+    --radius-md:8px; --radius-lg:12px;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; font-size:14px; color:var(--text-primary); background:var(--bg-tertiary); height:100vh; overflow:hidden; }
+  .app { display:flex; height:100vh; }
+  .sidebar { width:220px; min-width:220px; background:var(--bg-secondary); border-right:0.5px solid var(--border-light); display:flex; flex-direction:column; padding:1.25rem 0; }
+  .sidebar-logo { padding:0 1.25rem 1.25rem; border-bottom:0.5px solid var(--border-light); margin-bottom:0.75rem; }
+  .sidebar-logo h1 { font-size:15px; font-weight:600; }
+  .sidebar-logo p { font-size:11px; color:var(--text-tertiary); margin-top:2px; }
+  .nav-section-label { font-size:10px; font-weight:600; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase; padding:0.75rem 1.25rem 0.25rem; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:7px 1.25rem; font-size:13px; color:var(--text-secondary); cursor:pointer; border:none; background:none; width:100%; text-align:left; transition:background 0.1s,color 0.1s; font-family:inherit; }
+  .nav-item:hover { background:var(--bg-primary); color:var(--text-primary); }
+  .nav-item.active { background:var(--bg-primary); color:var(--text-primary); font-weight:500; border-right:2px solid var(--blue); }
+  .nav-item i { font-size:16px; }
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .topbar { padding:1rem 1.5rem; border-bottom:0.5px solid var(--border-light); display:flex; align-items:center; justify-content:space-between; background:var(--bg-primary); flex-shrink:0; }
+  .topbar h2 { font-size:16px; font-weight:600; }
+  .topbar p { font-size:13px; color:var(--text-secondary); margin-top:1px; }
+  .topbar-actions { display:flex; gap:8px; align-items:center; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; font-size:13px; font-family:inherit; border:0.5px solid var(--border-mid); border-radius:var(--radius-md); cursor:pointer; background:var(--bg-primary); color:var(--text-primary); transition:background 0.1s,transform 0.1s; font-weight:400; }
+  .btn:hover { background:var(--bg-secondary); }
+  .btn:active { transform:scale(0.98); }
+  .btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-primary { background:var(--blue); color:#fff; border-color:var(--blue-dark); }
+  .btn-primary:hover { background:var(--blue-dark); }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .btn-danger { background:var(--red-bg); color:var(--red-text); border-color:rgba(163,45,45,0.3); }
+  .content { flex:1; overflow-y:auto; padding:1.5rem; }
+  .stats-row { display:grid; gap:12px; margin-bottom:1.5rem; }
+  .stat-card { background:var(--bg-secondary); border-radius:var(--radius-md); padding:1rem; }
+  .stat-card .label { font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+  .stat-card .value { font-size:24px; font-weight:600; }
+  .stat-card .sub { font-size:11px; color:var(--text-tertiary); margin-top:2px; }
+  .card { background:var(--bg-primary); border:0.5px solid var(--border-light); border-radius:var(--radius-lg); margin-bottom:1rem; overflow:hidden; }
+  .card-header { padding:0.875rem 1.25rem; border-bottom:0.5px solid var(--border-light); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .card-header h3 { font-size:14px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:9px 1.25rem; font-size:11px; font-weight:600; color:var(--text-secondary); letter-spacing:0.04em; text-transform:uppercase; border-bottom:0.5px solid var(--border-light); background:var(--bg-secondary); }
+  td { padding:10px 1.25rem; border-bottom:0.5px solid var(--border-light); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--bg-secondary); }
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:var(--radius-md); font-size:11px; font-weight:500; }
+  .badge-success { background:var(--green-bg); color:var(--green-text); }
+  .badge-warning { background:var(--amber-bg); color:var(--amber-text); }
+  .badge-info { background:var(--blue-bg); color:var(--blue-text); }
+  .badge-muted { background:var(--bg-secondary); color:var(--text-secondary); }
+  .badge-red { background:var(--red-bg); color:var(--red-text); }
+  .view { display:none; height:100%; flex-direction:column; }
+  .view.active { display:flex; }
+  .draw-panel { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .entrant-pool { max-height:360px; overflow-y:auto; }
+  .entrant-row { display:flex; align-items:center; gap:10px; padding:8px 1.25rem; border-bottom:0.5px solid var(--border-light); }
+  .entrant-row:last-child { border-bottom:none; }
+  .avatar { width:28px; height:28px; border-radius:50%; background:var(--blue-bg); color:var(--blue-text); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; }
+  .avatar-green { background:var(--green-bg); color:var(--green-text); }
+  .winner-slot { display:flex; align-items:center; gap:10px; padding:8px 1.25rem; border-bottom:0.5px solid var(--border-light); }
+  .winner-slot:last-child { border-bottom:none; }
+  .slot-num { width:22px; height:22px; border-radius:50%; background:var(--bg-secondary); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; }
+  .slot-num.filled { background:var(--green-bg); color:var(--green-text); }
+  .draw-controls { padding:1rem 1.25rem; border-top:0.5px solid var(--border-light); display:flex; align-items:center; gap:10px; }
+  .draw-status { font-size:12px; color:var(--text-secondary); flex:1; }
+  .form-row { margin-bottom:1rem; }
+  .form-row label { display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px; font-weight:500; }
+  .form-row input,.form-row select,.form-row textarea { width:100%; padding:8px 10px; font-size:13px; font-family:inherit; border:0.5px solid var(--border-mid); border-radius:var(--radius-md); background:var(--bg-primary); color:var(--text-primary); outline:none; transition:border-color 0.15s; }
+  .form-row input:focus,.form-row select:focus,.form-row textarea:focus { border-color:var(--blue); }
+  .form-row textarea { resize:vertical; min-height:80px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; z-index:200; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg-primary); border:0.5px solid var(--border-light); border-radius:var(--radius-lg); width:460px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
+  .modal-header { padding:1rem 1.25rem; border-bottom:0.5px solid var(--border-light); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--bg-primary); }
+  .modal-header h3 { font-size:15px; font-weight:600; }
+  .modal-body { padding:1.25rem; }
+  .modal-footer { padding:0.875rem 1.25rem; border-top:0.5px solid var(--border-light); display:flex; justify-content:flex-end; gap:8px; }
+  .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px); background:var(--text-primary); color:var(--bg-primary); padding:10px 18px; border-radius:var(--radius-md); font-size:13px; transition:transform 0.25s ease; z-index:300; pointer-events:none; white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; }
+  .spinner-dark { border-color:rgba(0,0,0,0.15); border-top-color:var(--text-secondary); }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-state { display:flex; align-items:center; gap:8px; padding:2rem; color:var(--text-secondary); font-size:13px; }
+  .empty { padding:2rem; text-align:center; color:var(--text-tertiary); font-size:13px; }
+
+  /* Setup banner */
+  .setup-banner { background:var(--amber-bg); border:0.5px solid rgba(133,79,11,0.3); border-radius:var(--radius-md); padding:0.875rem 1.25rem; margin-bottom:1.25rem; display:flex; align-items:flex-start; gap:10px; font-size:13px; color:var(--amber-text); }
+  .setup-banner i { font-size:18px; flex-shrink:0; margin-top:1px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h1><i class="ti ti-ticket" style="font-size:16px;vertical-align:-2px;margin-right:5px;"></i>Ballot</h1>
+      <p>Admin</p>
+    </div>
+    <div class="nav-section-label">Manage</div>
+    <button class="nav-item active" onclick="showView('events')"><i class="ti ti-calendar-event"></i> Events</button>
+    <button class="nav-item" onclick="showView('entries')"><i class="ti ti-users"></i> Entries</button>
+    <button class="nav-item" onclick="showView('draw')"><i class="ti ti-arrows-shuffle"></i> Run draw</button>
+    <div class="nav-section-label" style="margin-top:0.75rem;">Tools</div>
+    <button class="nav-item" onclick="showView('results')"><i class="ti ti-trophy"></i> Results</button>
+    <button class="nav-item" onclick="showView('settings')"><i class="ti ti-settings"></i> Settings</button>
+  </div>
+
+  <div class="main">
+
+    <!-- EVENTS -->
+    <div id="view-events" class="view active">
+      <div class="topbar">
+        <div><h2>Events</h2><p>Manage your ballot events</p></div>
+        <div class="topbar-actions">
+          <button class="btn" onclick="loadAll()"><i class="ti ti-refresh"></i> Refresh</button>
+          <button class="btn btn-primary" onclick="openModal('new-event')"><i class="ti ti-plus"></i> New event</button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="setup-banner-events"></div>
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat-card"><div class="label">Total events</div><div class="value" id="stat-events">—</div></div>
+          <div class="stat-card"><div class="label">Total entries</div><div class="value" id="stat-entries">—</div></div>
+          <div class="stat-card"><div class="label">Total capacity</div><div class="value" id="stat-capacity">—</div></div>
+          <div class="stat-card"><div class="label">Draws complete</div><div class="value" id="stat-draws">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>All events</h3></div>
+          <table>
+            <thead><tr><th>Event name</th><th>Date</th><th>Capacity</th><th>Entries</th><th>Status</th><th>Draw</th><th></th></tr></thead>
+            <tbody id="events-tbody"><tr><td colspan="7"><div class="loading-state"><span class="spinner spinner-dark"></span> Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRIES -->
+    <div id="view-entries" class="view">
+      <div class="topbar">
+        <div><h2>Entries</h2><p id="entries-subtitle">Select an event</p></div>
+        <div class="topbar-actions">
+          <select id="entries-event-select" style="font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;" onchange="loadEntriesForEvent()"></select>
+          <button class="btn btn-primary" onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-header">
+            <h3>Entrants</h3>
+            <input id="entry-search" type="search" placeholder="Search name or email…" style="font-size:13px;padding:5px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;width:220px;" oninput="renderEntriesTable()">
+          </div>
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Organisation</th><th>Entered</th><th>Places</th><th>Status</th><th></th></tr></thead>
+            <tbody id="entries-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAW -->
+    <div id="view-draw" class="view">
+      <div class="topbar">
+        <div><h2>Run draw</h2><p id="draw-subtitle">Select an event</p></div>
+        <div class="topbar-actions">
+          <select id="draw-event-select" style="font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;" onchange="initDrawForEvent()"></select>
+        </div>
+      </div>
+      <div class="content">
+        <div class="draw-panel">
+          <div class="card">
+            <div class="card-header"><h3>Entrant pool</h3><span class="badge badge-info" id="pool-count">—</span></div>
+            <div class="entrant-pool" id="draw-pool"></div>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;">
+            <div class="card-header"><h3>Winners</h3><span class="badge badge-success" id="winner-count">0 drawn</span></div>
+            <div id="winners-list" style="flex:1;overflow-y:auto;max-height:360px;"></div>
+            <div class="draw-controls">
+              <span class="draw-status" id="draw-status">Ready</span>
+              <button class="btn" onclick="resetDraw()"><i class="ti ti-refresh"></i> Reset</button>
+              <button class="btn btn-primary" id="btn-draw" onclick="runDraw()"><i class="ti ti-arrows-shuffle"></i> Draw next</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:0.5rem;display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn" onclick="drawAll()">Draw all remaining</button>
+          <button class="btn btn-primary" id="btn-confirm" style="display:none;" onclick="confirmDraw()"><i class="ti ti-check"></i> Confirm &amp; save results</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="view-results" class="view">
+      <div class="topbar">
+        <div><h2>Results</h2><p id="results-subtitle">Completed draws</p></div>
+        <div class="topbar-actions">
+          <select id="results-event-select" style="font-size:13px;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);font-family:inherit;" onchange="renderResults()"></select>
+          <button class="btn" onclick="exportResults()"><i class="ti ti-download"></i> Export CSV</button>
+        </div>
+      </div>
+      <div class="content" id="results-content"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="view-settings" class="view">
+      <div class="topbar"><div><h2>Settings</h2><p>Configure your Google Sheets connection</p></div></div>
+      <div class="content">
+        <div class="card" style="max-width:560px;">
+          <div class="card-header"><h3>Apps Script URL</h3></div>
+          <div style="padding:1.25rem;">
+            <div class="form-row">
+              <label>Web app URL</label>
+              <input id="settings-url" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:1rem;line-height:1.5;">
+              Paste the URL from your Apps Script deployment here. It's saved in your browser — no server needed.
+            </p>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="saveSettings()"><i class="ti ti-check"></i> Save & test connection</button>
+              <button class="btn" onclick="clearSettings()">Clear</button>
+            </div>
+            <div id="connection-status" style="margin-top:1rem;font-size:13px;"></div>
+          </div>
+        </div>
+        <div class="card" style="max-width:560px;">
+          <div class="card-header"><h3>Entry form link</h3></div>
+          <div style="padding:1.25rem;">
+            <div class="form-row">
+              <label>Public entry form URL</label>
+              <input id="settings-form-url" type="url" placeholder="https://yourusername.github.io/ballot/entry-form.html">
+            </div>
+            <p style="font-size:12px;color:var(--text-secondary);margin-bottom:1rem;line-height:1.5;">
+              Where you've hosted <code>entry-form.html</code>. Used to generate shareable links per event.
+            </p>
+            <button class="btn btn-primary" onclick="saveFormUrl()"><i class="ti ti-check"></i> Save</button>
+          </div>
+        </div>
+        <div class="card" style="max-width:560px;">
+          <div class="card-header"><h3>Setup guide</h3></div>
+          <div style="padding:1.25rem;font-size:13px;color:var(--text-secondary);line-height:1.8;">
+            <ol style="padding-left:1.25rem;">
+              <li>Create a new Google Sheet</li>
+              <li>Go to <strong>Extensions → Apps Script</strong></li>
+              <li>Replace all code with the contents of <code>Code.gs</code></li>
+              <li>Click <strong>Deploy → New deployment</strong></li>
+              <li>Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong></li>
+              <li>Copy the web app URL and paste it above</li>
+              <li>Host <code>entry-form.html</code> on GitHub Pages or similar</li>
+              <li>Paste the entry form URL above</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NEW EVENT MODAL -->
+<div class="modal-overlay" id="modal-new-event" onclick="if(event.target===this)closeModal('new-event')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New event</h3>
+      <button class="btn btn-sm" onclick="closeModal('new-event')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row"><label>Event name *</label><input id="ne-name" placeholder="e.g. Brisbane Architecture Symposium"></div>
+      <div class="form-row"><label>Venue / location</label><input id="ne-venue" placeholder="e.g. Brisbane Convention Centre"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Event date *</label><input id="ne-date" type="date"></div>
+        <div class="form-row"><label>Entries close *</label><input id="ne-close" type="date"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>Capacity *</label><input id="ne-capacity" type="number" placeholder="20" min="1"></div>
+        <div class="form-row"><label>Max group size</label><input id="ne-groupmax" type="number" placeholder="2" min="1" value="2"></div>
+      </div>
+      <div class="form-row"><label>Description</label><textarea id="ne-desc" placeholder="Shown on the entry form…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('new-event')">Cancel</button>
+      <button class="btn btn-primary" id="btn-create-event" onclick="createEvent()"><i class="ti ti-check"></i> Create event</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY_URL     = 'ballot_script_url';
+const STORAGE_KEY_FORM    = 'ballot_form_url';
+
+function getScriptUrl() { return localStorage.getItem(STORAGE_KEY_URL) || ''; }
+function getFormUrl()   { return localStorage.getItem(STORAGE_KEY_FORM) || ''; }
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
+async function api(params) {
+  const url = getScriptUrl();
+  if (!url) { showToast('⚠️ Paste your Apps Script URL in Settings first.'); throw new Error('No URL configured'); }
+
+  // GET for reads, POST for writes
+  const readActions = ['getEvents','getEntries','getAllEntries'];
+  const isRead = readActions.includes(params.action);
+
+  let res;
+  if (isRead) {
+    const qs = new URLSearchParams(params).toString();
+    res = await fetch(`${url}?${qs}`);
+  } else {
+    res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Unknown error');
+  return json.data;
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+
+let events  = [];
+let entries = [];
+let drawPool    = [];
+let drawWinners = [];
+let currentDrawEventId = null;
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = String(iso).split('-');
+  return d + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ' ' + y;
+}
+function initials(first='', last='') { return (first[0]||'')+(last[0]||''); }
+
+function showToast(msg, dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function openModal(name)  { document.getElementById('modal-'+name).classList.add('open'); }
+function closeModal(name) { document.getElementById('modal-'+name).classList.remove('open'); }
+
+function setLoading(btnId, loading, label='Save') {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading ? `<span class="spinner"></span> Working…` : label;
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  const map = {events:0,entries:1,draw:2,results:3,settings:4};
+  document.querySelectorAll('.nav-item')[map[name]]?.classList.add('active');
+
+  if (name==='entries') { populateEventSelects(); renderEntriesTable(); }
+  if (name==='draw')    { populateEventSelects(); initDrawForEvent(); }
+  if (name==='results') { populateEventSelects(); renderResults(); }
+  if (name==='settings') {
+    document.getElementById('settings-url').value = getScriptUrl();
+    document.getElementById('settings-form-url').value = getFormUrl();
+  }
+}
+
+// ─── LOAD ALL DATA ────────────────────────────────────────────────────────────
+
+async function loadAll() {
+  if (!getScriptUrl()) {
+    showSetupBanner();
+    renderEventsTable();
+    return;
+  }
+  try {
+    [events, entries] = await Promise.all([api({action:'getEvents'}), api({action:'getAllEntries'})]);
+    renderEventsTable();
+    populateEventSelects();
+  } catch(e) {
+    showToast('Error loading data: ' + e.message);
+  }
+}
+
+function showSetupBanner() {
+  const el = document.getElementById('setup-banner-events');
+  el.innerHTML = `<div class="setup-banner"><i class="ti ti-alert-triangle"></i><div>
+    <strong>Not connected.</strong> Go to <a href="#" onclick="showView('settings');return false;" style="color:var(--amber-text);text-decoration:underline;">Settings</a>
+    and paste your Google Apps Script URL to get started.
+  </div></div>`;
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+
+function renderEventsTable() {
+  document.getElementById('stat-events').textContent   = events.length;
+  document.getElementById('stat-entries').textContent  = entries.length;
+  document.getElementById('stat-capacity').textContent = events.reduce((s,e)=>s+e.capacity,0);
+  document.getElementById('stat-draws').textContent    = events.filter(e=>e.drawDone).length;
+
+  const tbody = document.getElementById('events-tbody');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">No events yet.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = events.map(ev => {
+    const count = entries.filter(e=>e.eventId===ev.id).length;
+    const formUrl = getFormUrl() ? `${getFormUrl()}?event=${ev.id}` : '';
+    const linkBtn = formUrl
+      ? `<button class="btn btn-sm" onclick="copyLink('${formUrl}')" title="Copy entry form link"><i class="ti ti-link"></i></button>`
+      : '';
+    const drawBtn = ev.drawDone
+      ? `<button class="btn btn-sm" onclick="showView('results')">Results <i class="ti ti-trophy"></i></button>`
+      : `<button class="btn btn-sm" onclick="showView('draw')">Draw <i class="ti ti-arrows-shuffle"></i></button>`;
+    return `<tr>
+      <td><strong>${ev.name}</strong><br><span style="font-size:11px;color:var(--text-tertiary);">${ev.venue||''}</span></td>
+      <td>${fmtDate(ev.date)}</td>
+      <td>${ev.capacity}</td>
+      <td>${count}</td>
+      <td>${ev.status==='open'?'<span class="badge badge-warning">Open</span>':'<span class="badge badge-muted">Closed</span>'}</td>
+      <td>${ev.drawDone?'<span class="badge badge-success">Complete</span>':'<span class="badge badge-muted">Not run</span>'}</td>
+      <td style="display:flex;gap:6px;align-items:center;">${drawBtn}${linkBtn}
+        <button class="btn btn-sm btn-danger" onclick="deleteEvent(${ev.id})"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function createEvent() {
+  const name     = document.getElementById('ne-name').value.trim();
+  const date     = document.getElementById('ne-date').value;
+  const close    = document.getElementById('ne-close').value;
+  const capacity = parseInt(document.getElementById('ne-capacity').value);
+  if (!name||!date||!close||!capacity) { showToast('Fill in required fields.'); return; }
+  setLoading('btn-create-event', true);
+  try {
+    await api({ action:'createEvent', name, venue:document.getElementById('ne-venue').value.trim(),
+      date, close, capacity, groupmax:parseInt(document.getElementById('ne-groupmax').value)||2,
+      desc:document.getElementById('ne-desc').value.trim(), status:'open' });
+    closeModal('new-event');
+    ['ne-name','ne-venue','ne-date','ne-close','ne-capacity','ne-groupmax','ne-desc'].forEach(id=>document.getElementById(id).value='');
+    await loadAll();
+    showToast('Event created ✓');
+  } catch(e) { showToast('Error: '+e.message); }
+  setLoading('btn-create-event', false, '<i class="ti ti-check"></i> Create event');
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event and all its entries?')) return;
+  try {
+    await api({ action:'deleteEvent', id });
+    await loadAll();
+    showToast('Event deleted.');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied ✓'));
+}
+
+// ─── ENTRIES ─────────────────────────────────────────────────────────────────
+
+function populateEventSelects() {
+  ['entries-event-select','draw-event-select','results-event-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const doneOnly = id==='results-event-select';
+    const openOnly = id==='draw-event-select';
+    const list = events.filter(e => doneOnly ? e.drawDone : openOnly ? !e.drawDone : true);
+    sel.innerHTML = list.length
+      ? list.map(e=>`<option value="${e.id}">${e.name}</option>`).join('')
+      : '<option value="">No events</option>';
+  });
+}
+
+async function loadEntriesForEvent() {
+  const eventId = parseInt(document.getElementById('entries-event-select').value);
+  try {
+    const fresh = await api({ action:'getEntries', eventId });
+    entries = entries.filter(e=>e.eventId!==eventId).concat(fresh);
+    renderEntriesTable();
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+function renderEntriesTable() {
+  const sel = document.getElementById('entries-event-select');
+  const eventId = parseInt(sel?.value);
+  const ev = events.find(e=>e.id===eventId);
+  const q = (document.getElementById('entry-search')?.value||'').toLowerCase();
+  let list = entries.filter(e=>e.eventId===eventId);
+  if (q) list = list.filter(e=>(e.first+' '+e.last).toLowerCase().includes(q)||e.email.toLowerCase().includes(q));
+  document.getElementById('entries-subtitle').textContent = ev ? `${ev.name} · ${list.length} entr${list.length===1?'y':'ies'}` : '';
+  const tbody = document.getElementById('entries-tbody');
+  if (!list.length) { tbody.innerHTML='<tr><td colspan="7"><div class="empty">No entries.</div></td></tr>'; return; }
+  tbody.innerHTML = list.map(e=>{
+    const bc = e.status==='winner'?'badge-success':e.status==='waitlisted'?'badge-warning':'badge-info';
+    const bl = e.status==='winner'?'Winner':e.status==='waitlisted'?'Waitlisted':'Eligible';
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar">${initials(e.first,e.last)}</div>${e.first} ${e.last}</div></td>
+      <td style="color:var(--text-secondary)">${e.email}</td>
+      <td style="color:var(--text-secondary)">${e.org||'—'}</td>
+      <td style="color:var(--text-secondary)">${fmtDate(e.date)}</td>
+      <td>${e.places}</td>
+      <td><span class="badge ${bc}">${bl}</span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id},${e.eventId})"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteEntry(id, eventId) {
+  if (!confirm('Remove this entry?')) return;
+  try {
+    await api({ action:'deleteEntry', id });
+    entries = entries.filter(e=>e.id!==id);
+    renderEntriesTable();
+    showToast('Entry removed.');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+function exportCSV() {
+  const sel = document.getElementById('entries-event-select');
+  const eventId = parseInt(sel?.value);
+  const ev = events.find(e=>e.id===eventId);
+  const list = entries.filter(e=>e.eventId===eventId);
+  if (!list.length) { showToast('No entries to export.'); return; }
+  const csv = ['Name,Email,Organisation,Places,Date entered,Status',
+    ...list.map(e=>`${e.first} ${e.last},${e.email},${e.org||''},${e.places},${e.date},${e.status}`)].join('\n');
+  download(csv, (ev?.name||'entries').replace(/\s+/g,'-').toLowerCase()+'-entries.csv');
+  showToast('CSV exported.');
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────────
+
+function initDrawForEvent() {
+  const sel = document.getElementById('draw-event-select');
+  const eventId = parseInt(sel?.value);
+  const ev = events.find(e=>e.id===eventId);
+  if (!ev) return;
+  currentDrawEventId = eventId;
+  document.getElementById('draw-subtitle').textContent = `${ev.name} · ${ev.capacity} places · ${entries.filter(e=>e.eventId===eventId&&e.status==='eligible').length} entries`;
+  drawPool    = entries.filter(e=>e.eventId===eventId&&e.status==='eligible').map(e=>({...e}));
+  drawWinners = [];
+  renderDrawPool();
+  renderDrawWinners(ev);
+}
+
+function renderDrawPool() {
+  document.getElementById('pool-count').textContent = drawPool.length + ' eligible';
+  document.getElementById('draw-pool').innerHTML = drawPool.length
+    ? drawPool.map(e=>`<div class="entrant-row">
+        <div class="avatar">${initials(e.first,e.last)}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500">${e.first} ${e.last}</div>
+        <div style="font-size:11px;color:var(--text-tertiary)">${e.email}</div></div>
+        <span style="font-size:11px;color:var(--text-tertiary)">×${e.places}</span>
+      </div>`).join('')
+    : '<div class="empty">Pool empty</div>';
+}
+
+function renderDrawWinners(ev) {
+  if (!ev) ev = events.find(e=>e.id===currentDrawEventId);
+  if (!ev) return;
+  const used = drawWinners.reduce((s,w)=>s+w.places,0);
+  const remaining = ev.capacity - used;
+  document.getElementById('winner-count').textContent = used+' / '+ev.capacity+' drawn';
+  let html='', num=1;
+  for (const w of drawWinners) {
+    html+=`<div class="winner-slot"><div class="slot-num filled">${num}</div>
+      <div class="avatar avatar-green">${initials(w.first,w.last)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${w.first} ${w.last}</div>
+      <div style="font-size:11px;color:var(--text-tertiary)">${w.places>1?w.places+' places':'1 place'}</div></div></div>`;
+    num+=w.places;
+  }
+  for (let i=num;i<=ev.capacity;i++) html+=`<div class="winner-slot"><div class="slot-num">${i}</div><div style="font-size:13px;color:var(--text-tertiary)">—</div></div>`;
+  document.getElementById('winners-list').innerHTML = html;
+  const done = remaining<=0||drawPool.length===0;
+  document.getElementById('draw-status').textContent = done
+    ? (remaining<=0?'All places filled.':'Pool exhausted.')
+    : remaining+' place'+(remaining===1?'':'s')+' remaining · '+drawPool.length+' in pool';
+  document.getElementById('btn-draw').disabled = done;
+  document.getElementById('btn-confirm').style.display = done ? 'inline-flex' : 'none';
+}
+
+function runDraw() {
+  const ev = events.find(e=>e.id===currentDrawEventId); if (!ev) return;
+  const used = drawWinners.reduce((s,w)=>s+w.places,0);
+  const remaining = ev.capacity - used;
+  const eligible = drawPool.filter(e=>e.places<=remaining);
+  if (!eligible.length) { showToast('No eligible entrants fit remaining places.'); return; }
+  const w = eligible[Math.floor(Math.random()*eligible.length)];
+  drawPool = drawPool.filter(e=>e.id!==w.id);
+  drawWinners.push(w);
+  renderDrawPool(); renderDrawWinners(ev);
+}
+
+function drawAll() {
+  const ev = events.find(e=>e.id===currentDrawEventId); if (!ev) return;
+  let safety=0;
+  while (safety++<500) {
+    const used=drawWinners.reduce((s,w)=>s+w.places,0), rem=ev.capacity-used;
+    if (rem<=0||!drawPool.length) break;
+    const el=drawPool.filter(e=>e.places<=rem); if (!el.length) break;
+    const w=el[Math.floor(Math.random()*el.length)];
+    drawPool=drawPool.filter(e=>e.id!==w.id); drawWinners.push(w);
+  }
+  renderDrawPool(); renderDrawWinners(ev);
+}
+
+function resetDraw() { initDrawForEvent(); }
+
+async function confirmDraw() {
+  const ev = events.find(e=>e.id===currentDrawEventId); if (!ev) return;
+  if (!confirm('Save these draw results? This marks the event as complete.')) return;
+  document.getElementById('btn-confirm').disabled = true;
+  try {
+    await api({ action:'saveDrawResults', eventId:currentDrawEventId, winnerIds:drawWinners.map(w=>w.id) });
+    ev.drawDone=true; ev.status='closed';
+    entries.forEach(e=>{ if(e.eventId!==currentDrawEventId) return;
+      e.status = drawWinners.find(w=>w.id===e.id) ? 'winner' : 'waitlisted'; });
+    document.getElementById('draw-status').textContent='✓ Results saved.';
+    document.getElementById('btn-confirm').style.display='none';
+    showToast('Draw results saved ✓');
+  } catch(e) { showToast('Error: '+e.message); document.getElementById('btn-confirm').disabled=false; }
+}
+
+// ─── RESULTS ─────────────────────────────────────────────────────────────────
+
+function renderResults() {
+  const eventId = parseInt(document.getElementById('results-event-select')?.value);
+  const ev = events.find(e=>e.id===eventId);
+  const el = document.getElementById('results-content');
+  if (!ev||!ev.drawDone) { el.innerHTML='<div class="empty" style="padding:3rem;">No completed draws yet.</div>'; return; }
+  document.getElementById('results-subtitle').textContent=`${ev.name} · ${fmtDate(ev.date)} · Completed`;
+  const winners   = entries.filter(e=>e.eventId===eventId&&e.status==='winner');
+  const waitlist  = entries.filter(e=>e.eventId===eventId&&e.status==='waitlisted');
+  const placesUsed= winners.reduce((s,e)=>s+e.places,0);
+  el.innerHTML=`
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat-card"><div class="label">Total entries</div><div class="value">${entries.filter(e=>e.eventId===eventId).length}</div></div>
+      <div class="stat-card"><div class="label">Places allocated</div><div class="value">${placesUsed}</div></div>
+      <div class="stat-card"><div class="label">Waitlisted</div><div class="value">${waitlist.length}</div></div>
+    </div>
+    <div class="draw-panel">
+      <div class="card"><div class="card-header"><h3>Winners</h3><span class="badge badge-success">${winners.length} selected</span></div>
+        <table><thead><tr><th>#</th><th>Name</th><th>Organisation</th><th>Places</th></tr></thead><tbody>
+          ${winners.map((e,i)=>`<tr><td>${i+1}</td><td>${e.first} ${e.last}</td><td style="color:var(--text-secondary)">${e.org||'—'}</td><td>${e.places}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">None</td></tr>'}
+        </tbody></table></div>
+      <div class="card"><div class="card-header"><h3>Waitlist</h3><span class="badge badge-warning">${waitlist.length} waitlisted</span></div>
+        <table><thead><tr><th>#</th><th>Name</th><th>Places</th></tr></thead><tbody>
+          ${waitlist.map((e,i)=>`<tr><td>${i+1}</td><td>${e.first} ${e.last}</td><td>${e.places}</td></tr>`).join('')||'<tr><td colspan="3" class="empty">None</td></tr>'}
+        </tbody></table></div>
+    </div>`;
+}
+
+function exportResults() {
+  const eventId = parseInt(document.getElementById('results-event-select')?.value);
+  const ev = events.find(e=>e.id===eventId);
+  const list = entries.filter(e=>e.eventId===eventId&&(e.status==='winner'||e.status==='waitlisted'));
+  if (!list.length) { showToast('No results to export.'); return; }
+  const csv = ['Status,Name,Email,Organisation,Places',...list.map(e=>`${e.status},${e.first} ${e.last},${e.email},${e.org||''},${e.places}`)].join('\n');
+  download(csv,(ev?.name||'results').replace(/\s+/g,'-').toLowerCase()+'-results.csv');
+  showToast('Exported ✓');
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+
+async function saveSettings() {
+  const url = document.getElementById('settings-url').value.trim();
+  if (!url) { showToast('Paste the Apps Script URL first.'); return; }
+  localStorage.setItem(STORAGE_KEY_URL, url);
+  const el = document.getElementById('connection-status');
+  el.innerHTML = '<span style="color:var(--text-secondary)"><span class="spinner spinner-dark"></span> Testing…</span>';
+  try {
+    const data = await api({ action:'getEvents' });
+    events = data;
+    el.innerHTML = `<span style="color:var(--green-text)"><i class="ti ti-circle-check"></i> Connected — ${events.length} event(s) found.</span>`;
+    showToast('Connected ✓');
+    await loadAll();
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--red-text)"><i class="ti ti-alert-circle"></i> Error: ${e.message}</span>`;
+  }
+}
+
+function clearSettings() {
+  localStorage.removeItem(STORAGE_KEY_URL);
+  document.getElementById('settings-url').value='';
+  document.getElementById('connection-status').innerHTML='';
+  showToast('URL cleared.');
+}
+
+function saveFormUrl() {
+  const url = document.getElementById('settings-form-url').value.trim();
+  localStorage.setItem(STORAGE_KEY_FORM, url);
+  showToast('Form URL saved ✓');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+function download(content, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type:'text/csv'}));
+  a.download = filename; a.click();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+loadAll();
+</script>
+</body>
+</html>
